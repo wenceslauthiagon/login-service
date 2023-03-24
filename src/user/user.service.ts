@@ -26,12 +26,14 @@ export class UserService {
     };
   }
 
-  findAll() {
-    return this.prismaService.user.findMany();
+  async findAll() {
+    return await this.prismaService.user.findMany();
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findByEmail(email: string) {
+    return await this.prismaService.user.findMany({
+      where: { email },
+    });
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {
