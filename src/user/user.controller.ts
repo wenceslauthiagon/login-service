@@ -10,30 +10,32 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { IsPublic } from 'src/auth/decorators/is-public.decorator';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.create(createUserDto);
+  create(@Body() data: CreateUserDto) {
+    return this.userService.create(data);
   }
 
-  @Get()
+  @IsPublic()
+  @Get('/all')
   findAll() {
     console.log('Nothing');
     return this.userService.findAll();
   }
 
-  @Get(':email')
-  findOne(@Param('email') email: string) {
-    return this.userService.findByEmail('thiago.wenceslau@mail.com');
-  }
+  // @Get(':email')
+  // findOne(@Param('email') email: string) {
+  //   return this.userService.findByEmail(email);
+  // }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.userService.update(+id, updateUserDto);
+  @Patch(':email')
+  update(@Param('email') email: string, @Body() data: UpdateUserDto) {
+    return this.userService.update(email, data);
   }
 
   @Delete(':id')

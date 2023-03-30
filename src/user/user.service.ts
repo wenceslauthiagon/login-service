@@ -31,13 +31,34 @@ export class UserService {
   }
 
   async findByEmail(email: string) {
-    return await this.prismaService.user.findUnique({
+    const user = await this.prismaService.user.findUnique({
       where: { email },
     });
+
+    return user;
   }
 
-  update(id: number, updateUserDto: UpdateUserDto) {
-    return `This action updates a #${id} user`;
+  async update(email: string, data: UpdateUserDto) {
+    const userExist = await this.prismaService.user.findUnique({
+      where: { email },
+    });
+
+    if (!userExist) {
+      throw new Error('User does not exist...');
+    }
+
+    const updatedUser = await this.prismaService.user.update({
+      data,
+      where: {
+        email,
+      },
+    });
+
+    updatedUser.password = undefined;
+
+    console.log('updatedUser', updatedUser);
+
+    return updatedUser;
   }
 
   remove(id: number) {
