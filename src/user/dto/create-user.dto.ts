@@ -1,6 +1,8 @@
 import { User } from '../entities/user.entity';
 import {
+  IsDateString,
   IsEmail,
+  IsOptional,
   IsString,
   Matches,
   MaxLength,
@@ -12,7 +14,7 @@ export class CreateUserDto extends User {
   email: string;
 
   @IsString()
-  @MinLength(4)
+  @MinLength(6)
   @MaxLength(20)
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
     message: 'password too weak',
@@ -21,4 +23,16 @@ export class CreateUserDto extends User {
 
   @IsString()
   name: string;
+
+  @IsDateString()
+  @IsOptional()
+  createdAt: Date;
+
+  @IsDateString()
+  @IsOptional()
+  updatedAt: Date;
+
+  @IsDateString()
+  @IsOptional()
+  deletedAt: Date;
 }

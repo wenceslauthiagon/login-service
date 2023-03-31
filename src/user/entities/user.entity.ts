@@ -3,6 +3,7 @@ export class User {
   email: string;
   password: string;
   name: string;
-  readAt?: string;
-  createdAt?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+  deletedAt?: Date;
 }

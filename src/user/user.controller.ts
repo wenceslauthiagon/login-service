@@ -16,6 +16,7 @@ import { IsPublic } from 'src/auth/decorators/is-public.decorator';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @IsPublic()
   @Post()
   create(@Body() data: CreateUserDto) {
     return this.userService.create(data);
@@ -33,6 +34,7 @@ export class UserController {
   //   return this.userService.findByEmail(email);
   // }
 
+  @IsPublic()
   @Patch(':email')
   update(@Param('email') email: string, @Body() data: UpdateUserDto) {
     return this.userService.update(email, data);

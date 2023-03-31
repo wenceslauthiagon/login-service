@@ -14,6 +14,7 @@ export class AppController {
     return this.appService.getCheck();
   }
 
+  @IsPublic()
   @Get('/me')
   getMe(@CurrentUser() user: User) {
     return user;
