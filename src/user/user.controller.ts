@@ -38,7 +38,7 @@ export class UserController {
   @IsPublic()
   @Patch(':email')
   async update(@Param('email') email: string, @Body() data: UpdateUserDto) {
-    return this.userService.update(email, data);
+    return await this.userService.update(email, data);
   }
 
   @IsPublic()

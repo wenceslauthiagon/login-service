@@ -41,7 +41,7 @@ export class UserService {
     return user;
   }
 
-  async update(email: string, data: UpdateUserDto) {
+  async update(email: string, updateUserDto: UpdateUserDto): Promise<User> {
     const userExist = await this.prismaService.user.findUnique({
       where: { email },
     });
@@ -49,6 +49,11 @@ export class UserService {
     if (!userExist) {
       throw new Error('User does not exist...');
     }
+
+    const data: Prisma.UserUpdateInput = {
+      ...updateUserDto,
+      updatedAt: new Date(),
+    };
 
     const updatedUser = await this.prismaService.user.update({
       data,
