@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { User, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
+// import { User } from './entities/user.entity';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -64,7 +64,9 @@ export class UserService {
     return updatedUser;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async destroy(id: string) {
+    const deletedUser = await this.prismaService.user.delete({ where: { id } });
+    console.log(deletedUser.id);
+    return deletedUser;
   }
 }

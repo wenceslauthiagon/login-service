@@ -10,6 +10,7 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from './entities/user.entity';
 import { IsPublic } from 'src/auth/decorators/is-public.decorator';
 
 @Controller('user')
@@ -36,12 +37,13 @@ export class UserController {
 
   @IsPublic()
   @Patch(':email')
-  update(@Param('email') email: string, @Body() data: UpdateUserDto) {
+  async update(@Param('email') email: string, @Body() data: UpdateUserDto) {
     return this.userService.update(email, data);
   }
 
+  @IsPublic()
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(+id);
+  async delete(@Param('id') id: string): Promise<User> {
+    return this.userService.destroy(id);
   }
 }
