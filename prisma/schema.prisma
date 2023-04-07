@@ -16,6 +16,7 @@ model User {
   email     String    @unique
   password  String
   name      String
+  active    Boolean
   createdAt DateTime  @default(now())
   deletedAt DateTime?
   updatedAt DateTime?

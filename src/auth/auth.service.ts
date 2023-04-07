@@ -17,6 +17,7 @@ export class AuthService {
       sub: user.id,
       email: user.email,
       name: user.name,
+      active: user.active,
     };
 
     const jwtToken = this.jwtService.sign(payload);
@@ -32,7 +33,7 @@ export class AuthService {
     if (user) {
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
-      if (!user.deletedAt) {
+      if (user.active === false || user.deletedAt) {
         throw new Error('User is inactive or removed, please check.');
       }
 

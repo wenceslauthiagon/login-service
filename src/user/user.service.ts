@@ -15,6 +15,7 @@ export class UserService {
       ...createUserDto,
       id: randomUUID(),
       createdAt: new Date(),
+      active: true,
       password: await bcrypt.hash(createUserDto.password, 10),
     };
 
@@ -80,6 +81,7 @@ export class UserService {
     const data: Prisma.UserUpdateInput = {
       ...userExist,
       deletedAt: new Date(),
+      active: false,
     };
 
     const deletedUser = await this.prismaService.user.update({
@@ -91,7 +93,7 @@ export class UserService {
 
     deletedUser.password = undefined;
 
-    console.log('updatedUser', deletedUser);
+    console.log('deletedUser', deletedUser);
 
     return deletedUser;
   }

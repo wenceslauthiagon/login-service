@@ -6,6 +6,9 @@ export class DeleteUserDto extends User {
   email: string;
 
   @IsOptional()
+  active: boolean;
+
+  @IsOptional()
   @IsDate()
   deletedAt?: Date;
 }

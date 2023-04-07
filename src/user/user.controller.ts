@@ -17,7 +17,6 @@ import { User } from '@prisma/client';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @IsPublic()
   @Post()
   create(@Body() data: CreateUserDto) {
     return this.userService.create(data);
@@ -35,13 +34,11 @@ export class UserController {
   //   return this.userService.findByEmail(email);
   // }
 
-  @IsPublic()
   @Patch(':email')
   async update(@Param('email') email: string, @Body() data: UpdateUserDto) {
     return await this.userService.update(email, data);
   }
 
-  @IsPublic()
   @Delete(':email')
   async delete(@Param('email') email: string): Promise<User> {
     return this.userService.destroy(email);

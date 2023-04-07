@@ -6,6 +6,9 @@ export class UpdateUserDto extends User {
   name: string;
 
   @IsOptional()
+  active: boolean;
+
+  @IsOptional()
   @IsDate()
   updatedAt: Date;
 }

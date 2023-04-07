@@ -24,6 +24,9 @@ export class CreateUserDto extends User {
   @IsString()
   name: string;
 
+  @IsOptional()
+  active: boolean;
+
   @IsDateString()
   @IsOptional()
   createdAt: Date;
