@@ -10,8 +10,8 @@ import {
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { User } from './entities/user.entity';
 import { IsPublic } from 'src/auth/decorators/is-public.decorator';
+import { User } from '@prisma/client';
 
 @Controller('user')
 export class UserController {
@@ -42,8 +42,8 @@ export class UserController {
   }
 
   @IsPublic()
-  @Delete(':id')
-  async delete(@Param('id') id: string): Promise<User> {
-    return this.userService.destroy(id);
+  @Delete(':email')
+  async delete(@Param('email') email: string): Promise<User> {
+    return this.userService.destroy(email);
   }
 }

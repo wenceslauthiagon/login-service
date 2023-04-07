@@ -32,6 +32,10 @@ export class AuthService {
     if (user) {
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
+      if (!user.deletedAt) {
+        throw new Error('User is inactive or removed, please check.');
+      }
+
       if (isPasswordValid) {
         return {
           ...user,

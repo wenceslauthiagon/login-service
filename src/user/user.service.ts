@@ -4,7 +4,6 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-// import { User } from './entities/user.entity';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -69,9 +68,31 @@ export class UserService {
     return updatedUser;
   }
 
-  async destroy(id: string) {
-    const deletedUser = await this.prismaService.user.delete({ where: { id } });
-    console.log(deletedUser.id);
+  async destroy(email: string): Promise<User> {
+    const userExist = await this.prismaService.user.findUnique({
+      where: { email },
+    });
+
+    if (!userExist) {
+      throw new Error('User does not exist...');
+    }
+
+    const data: Prisma.UserUpdateInput = {
+      ...userExist,
+      deletedAt: new Date(),
+    };
+
+    const deletedUser = await this.prismaService.user.update({
+      data,
+      where: {
+        email,
+      },
+    });
+
+    deletedUser.password = undefined;
+
+    console.log('updatedUser', deletedUser);
+
     return deletedUser;
   }
 }

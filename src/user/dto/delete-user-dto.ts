@@ -1,11 +1,11 @@
 import { IsDate, IsOptional, IsString } from 'class-validator';
 import { User } from '../entities/user.entity';
 
-export class UpdateUserDto extends User {
+export class DeleteUserDto extends User {
   @IsString()
-  name: string;
+  email: string;
 
   @IsOptional()
   @IsDate()
-  updatedAt: Date;
+  deletedAt?: Date;
 }
