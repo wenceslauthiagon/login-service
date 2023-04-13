@@ -6,13 +6,14 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { FindUserDto } from './dto/find-user.dto';
-import { IsPublic } from 'src/auth/decorators/is-public.decorator';
 import { User } from '@prisma/client';
+import PaginetdHelper from './helpers/user-pagineted.helpers';
+import { IsPublic } from 'src/auth/decorators/is-public.decorator';
 
 @Controller('user')
 export class UserController {
@@ -23,40 +24,14 @@ export class UserController {
     return this.userService.create(data);
   }
 
-  // @IsPublic()
-  // @Get('/all')
-  // async findAll(
-  //   @Param('params') skip?: number,
-  //   take?: number,
-  // ): Promise<User[]> {
-  //   return await this.userService.findAll(skip, take);
-  // }
-
-  // @IsPublic()
-  // @Get('/all')
-  // async findAllUsers(@Request() req, @Response() res): Promise<User[]> {
-  //   const { page, size, sort, order, search } = req.query;
-
-  //   const result = await this.userService.findAll({
-  //     page,
-  //     size,
-  //     sort,
-  //     order,
-  //     search,
-  //   });
-
-  //   return res.json(search);
-  // request.query.hasOwnProperty('page') ? request.query.page : 0,
-  // request.query.hasOwnProperty('size') ? request.query.size : 10,
-  // request.query.hasOwnProperty('sort') ? request.query.cursor : '',
-  // request.query.hasOwnProperty('order') ? request.query.where : 'asc',
-  // request.query.hasOwnProperty('search') ? request.query : 'asc',
-  // }
-
-  // @Get('pages')
-  // async pagination(@Request() req) {
-  //   return await this.userService.paginate();
-  // }
+  @IsPublic()
+  @Get('/all')
+  async findAll(
+    @Query('page') page?: number,
+    @Query('limitPerpage') limitPerpage?: number,
+  ): Promise<PaginetdHelper<User[]>> {
+    return await this.userService.findAllUsers(page, limitPerpage);
+  }
 
   // @Get(':email')
   // findOne(@Param('email') email: string) {

@@ -16,8 +16,6 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
-  console.log('HOST', HOST);
-  console.log('PORT', PORT);
   await app.listen(PORT, HOST);
 }
 bootstrap();

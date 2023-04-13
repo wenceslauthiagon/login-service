@@ -5,29 +5,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { randomUUID } from 'crypto';
+import PaginetdHelper from './helpers/user-pagineted.helpers';
 
 @Injectable()
 export class UserService {
   constructor(private readonly prismaService: PrismaService) {}
-
-  async paginate(
-    page: number,
-    size: number,
-    sort: string,
-    order: string,
-    search: string,
-  ) {
-    const results = await this.prismaService.user.findMany({
-      skip: page * size,
-      take: Number(size),
-      where: { name: { contains: search } },
-      orderBy: { [sort]: order },
-    });
-    const totalItems = await this.prismaService.user.count({
-      where: { name: { contains: search } },
-    });
-    return { results, totalItems };
-  }
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     const data: Prisma.UserCreateInput = {
@@ -48,55 +30,40 @@ export class UserService {
     };
   }
 
-  async findAll(
-    page: number,
-    size: number,
-    sort: string,
-    order: string,
-    search: string,
-    skip?: number,
-    take?: number,
-  ) {
-    const result = await this.prismaService.user.count();
-    const user = await this.prismaService.user.findMany({
-      skip,
-      take,
+  async findAllUsers(
+    page?: number,
+    limitPerpage?: number,
+  ): Promise<PaginetdHelper<User[]>> {
+    const numberEntries = await this.prismaService.user.count();
+    const paginetedHelper = new PaginetdHelper<User[]>(
+      page,
+      numberEntries,
+      limitPerpage,
+    );
+
+    Object.assign({
+      skip: paginetedHelper.offset,
+      take: paginetedHelper.limitPerpage,
+      order: {
+        id: 'ASC',
+      },
     });
-    console.log('allUser', user);
-    console.log('results', result);
-    // console.log('totalItems', totalItems);
-    return user;
+
+    const data = await this.prismaService.user.findMany({
+      where: {
+        active: true,
+      },
+    });
+
+    for (const users of data) {
+      users.password = undefined;
+
+      paginetedHelper.data = data;
+      delete paginetedHelper.offset;
+    }
+
+    return paginetedHelper;
   }
-
-  // async findAll(
-  //   page: number,
-  //   size: number,
-  //   sort: string,
-  //   order: string,
-  //   search: string,
-  // ) {
-  //   const { results, totalItems } = await this.paginate(
-  //     page,
-  //     size,
-  //     sort,
-  //     order,
-  //     search,
-  //   );
-  //   const totalPages = Math.ceil(totalItems / size) - 1;
-  //   const currentPage = Number(page);
-
-  //   return {
-  //     results,
-  //     pagination: {
-  //       length: totalItems,
-  //       size: size,
-  //       lastPage: totalPages,
-  //       page: currentPage,
-  //       startIndex: currentPage * size,
-  //       endIndex: currentPage * size + (size - 1),
-  //     },
-  //   };
-  // }
 
   async findByEmail(email: string) {
     const user = await this.prismaService.user.findUnique({
@@ -129,8 +96,6 @@ export class UserService {
 
     updatedUser.password = undefined;
 
-    console.log('updatedUser', updatedUser);
-
     return updatedUser;
   }
 
@@ -157,8 +122,6 @@ export class UserService {
     });
 
     deletedUser.password = undefined;
-
-    console.log('deletedUser', deletedUser);
 
     return deletedUser;
   }
