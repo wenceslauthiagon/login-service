@@ -75,8 +75,8 @@ export class UserService {
   }
 
   async findAll(
-    page = 1,
-    limitPerpage = 10,
+    page = 0,
+    pageSize = 10,
   ): Promise<PaginatedResult<UserListItem[]>> {
     const numberEntries = await this.prismaService.user.count({
       where: { active: true },
@@ -84,7 +84,7 @@ export class UserService {
     const paginatedResult = new PaginatedResult<UserListItem[]>(
       page,
       numberEntries,
-      limitPerpage,
+      pageSize,
     );
 
     const data = await this.prismaService.user.findMany({
@@ -93,12 +93,16 @@ export class UserService {
       },
       select: {
         id: true,
+        document: true,
+        email: true,
         name: true,
         active: true,
         created_at: true,
+        deleted_at: true,
+        updated_at: true,
       },
       skip: paginatedResult.offset,
-      take: paginatedResult.limitPerpage,
+      take: paginatedResult.pageSize,
       orderBy: {
         id: 'asc',
       },
@@ -107,6 +111,18 @@ export class UserService {
     paginatedResult.data = data;
 
     return paginatedResult;
+  }
+
+  async findById(id: string): Promise<UserResponse> {
+    const user = await this.prismaService.user.findUnique({
+      where: { id },
+    });
+
+    if (!user || !user.active || user.deleted_at) {
+      throw new NotFoundException('User does not exist');
+    }
+
+    return this.sanitizeUserForResponse(user);
   }
 
   async findByEmail(email: string) {

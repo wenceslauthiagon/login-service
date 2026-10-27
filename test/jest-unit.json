@@ -1,0 +1,42 @@
+{
+  "rootDir": "..",
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "testRegex": "test/.*\\.spec\\.ts$",
+  "extensionsToTreatAsEsm": [".ts"],
+  "transform": {
+    "^.+\\.(t|j)s$": [
+      "ts-jest",
+      {
+        "useESM": true,
+        "tsconfig": {
+          "module": "ESNext",
+          "moduleResolution": "Node",
+          "target": "ES2020",
+          "experimentalDecorators": true,
+          "emitDecoratorMetadata": true,
+          "esModuleInterop": true
+        }
+      }
+    ]
+  },
+  "moduleNameMapper": {
+    "^src/(.*)$": "<rootDir>/src/$1",
+    "^(\\.{1,2}/.*)\\.js$": "$1"
+  },
+  "testEnvironment": "node",
+  "clearMocks": true,
+  "collectCoverageFrom": [
+    "src/**/*.controller.ts",
+    "src/**/*.service.ts",
+    "src/**/*.strategy.ts",
+    "src/**/*.middleware.ts",
+    "src/**/*.filter.ts",
+    "src/common/responses/**/*.ts",
+    "src/user/documents/**/*.ts",
+    "src/user/helpers/**/*.ts",
+    "!src/**/*.spec.ts",
+    "!src/prisma/**/*.ts"
+  ],
+  "coverageDirectory": "<rootDir>/coverage",
+  "coverageReporters": ["text", "lcov"]
+}

@@ -1,7 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
+import request from 'supertest';
 import { AppModule } from './../src/app.module';
+import { afterEach } from '@jest/globals';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication;
@@ -15,10 +16,23 @@ describe('AppController (e2e)', () => {
     await app.init();
   });
 
-  it('/ (GET)', () => {
+  afterEach(async () => {
+    await app.close();
+  });
+
+  it('TC0001 - returns the health response envelope', () => {
     return request(app.getHttpServer())
-      .get('/')
+      .get('/health')
       .expect(200)
-      .expect('Hello World!');
+      .expect({
+        health: {
+          metadados: {
+            domains: ['health'],
+            api_version: '1.0',
+          },
+          data: { status: 'ok' },
+          message: 'Health check successful',
+        },
+      });
   });
 });

@@ -4,6 +4,7 @@ declare module '@nestjs/swagger' {
   export function ApiTags(tag: string): ClassDecorator;
   export function ApiBearerAuth(name?: string): MethodDecorator & ClassDecorator;
   export function ApiBody(opts?: any): MethodDecorator;
+  export function ApiQuery(opts?: any): MethodDecorator;
   export function ApiOperation(opts?: {
     summary?: string;
     description?: string;

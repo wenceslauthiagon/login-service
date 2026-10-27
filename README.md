@@ -108,11 +108,11 @@ npm ci
 docker compose up -d postgres maildev
 ```
 
-2. Gere o cliente Prisma e sincronize o schema com o banco de desenvolvimento:
+2. Gere o cliente Prisma e aplique as migrações PostgreSQL no banco local:
 
 ```bash
 npx prisma generate
-npx prisma db push
+npx prisma migrate dev
 ```
 
 3. Inicie a API em modo de desenvolvimento:
@@ -133,7 +133,7 @@ Depois de configurar o `.env`, execute:
 
 ```bash
 docker compose up --build -d
-docker compose exec login_service npx prisma db push
+docker compose exec login_service npx prisma migrate deploy
 ```
 
 Para acompanhar os logs e encerrar os serviços:
@@ -156,20 +156,73 @@ As rotas protegidas exigem um JWT no cabeçalho `Authorization: Bearer <access_t
 | `POST` | `/reset-password` | Público | Redefine a senha usando token e nova senha. |
 | `GET` | `/me` | JWT | Retorna os dados básicos do usuário autenticado. |
 | `POST` | `/users` | Público | Cria uma conta de usuário. |
-| `GET` | `/users` | JWT | Lista usuários ativos sem e-mail ou documento; aceita `page` e `limitPerpage`. |
-| `PATCH` | `/users/:id` | JWT do próprio usuário | Atualiza o nome da própria conta. |
-| `DELETE` | `/users/:id` | JWT do próprio usuário | Desativa e marca a própria conta como removida. |
+| `GET` | `/users` | JWT | Lista usuários ativos; aceita `page` (base zero) e `pageSize` (1 a 100). |
+| `GET` | `/users/:id` | JWT | Busca qualquer usuário ativo pelo ID. |
+| `PATCH` | `/users/:id` | JWT | Atualiza o nome do usuário indicado pelo ID. |
+| `DELETE` | `/users/:id` | JWT | Desativa outro usuário pelo ID e responde `204` sem corpo. Não permite desativar a própria conta. |
 | `GET` | `/health` | Público | Retorna o estado de disponibilidade da API. |
 | `GET` | `/check` | Público | Rota de verificação legada. |
 
 ### Exemplos
 
-Login:
+As respostas de sucesso usam o envelope `{ dominio: { metadados, data, message } }`. Apenas endpoints paginados incluem `pagination`; respostas simples não incluem essa propriedade. Por exemplo, a primeira página de usuários retorna:
+
+```json
+{
+  "users": {
+    "metadados": { "domains": ["users"], "api_version": "1.0" },
+    "data": [
+      {
+        "id": "2bc7c2bd-9c2e-4b22-a02f-fc453a79048d",
+        "document": "434993669",
+        "email": "user@example.com",
+        "name": "Usuário Exemplo",
+        "active": true,
+        "created_at": "2026-10-27T02:04:30.685Z",
+        "deleted_at": null,
+        "updated_at": null
+      }
+    ],
+    "pagination": {
+      "page": 0,
+      "pageSize": 10,
+      "totalPages": 1,
+      "totalRecords": 1
+    },
+    "message": "Users retrieved successfully"
+  }
+}
+```
+
+Endpoints sem paginação omitem a propriedade `pagination`. `DELETE /users/:id` é a exceção: responde `204 No Content` e não retorna corpo.
+
+Exemplo de listagem da primeira página (página zero):
+
+```bash
+curl "http://localhost:3000/users?page=0&pageSize=10" \
+  -H "Authorization: Bearer <access_token>"
+```
+
+Quando a página solicitada não contém registros, `data` será `[]`; o serviço não redireciona para a última página.
+
+Login (`POST /login`):
 
 ```bash
 curl -X POST http://localhost:3000/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"AstrongPass1"}'
+```
+
+Resposta de login:
+
+```json
+{
+  "login": {
+    "metadados": { "domains": ["login"], "api_version": "1.0" },
+    "data": { "access_token": "<access_token>" },
+    "message": "Login successful"
+  }
+}
 ```
 
 Solicitação de recuperação:
@@ -180,7 +233,7 @@ curl -X POST http://localhost:3000/forgot-password \
   -d '{"email":"user@example.com"}'
 ```
 
-A solicitação de recuperação sempre retorna uma mensagem genérica. Durante o desenvolvimento, confira o link enviado na caixa de entrada do Maildev.
+A solicitação de recuperação sempre retorna uma mensagem genérica no envelope `login`. Durante o desenvolvimento, confira o link enviado na caixa de entrada do Maildev.
 
 ## Testes e build
 
@@ -197,13 +250,43 @@ npm test
 npm run test:e2e
 ```
 
-**Estado conhecido da validação:** `npm run build` e `npm run lint` concluem com sucesso. O ESLint está configurado intencionalmente com validação sintática mínima de TypeScript, sem regras estilísticas. As duas suítes de teste ainda falham antes de executar os casos porque o Jest não transforma o pacote ESM `@nestjs/testing`.
+**Validação atual:** os testes unitários são executados com `npm test`; `npm run test:cov` mede os controllers, services, estratégias, middleware, filtros e validadores selecionados em `test/jest-unit.json`. O ESLint permanece configurado apenas para reconhecer TypeScript, sem regras estilísticas efetivas.
 
 ## Banco de dados e migrações
 
-O schema atual em `prisma/schema.prisma` declara PostgreSQL. **Há uma divergência no histórico existente:** `prisma/migrations` e `migration_lock.toml` foram criados para SQLite. Por isso, `prisma migrate dev` e `prisma migrate deploy` não são atualmente um fluxo de migração compatível com o banco configurado.
+O projeto utiliza exclusivamente PostgreSQL. O schema Prisma, o lockfile e o histórico versionado em `prisma/migrations` usam PostgreSQL.
 
-Para desenvolvimento, `prisma db push` sincroniza o schema sem depender desse histórico. Antes de publicar a aplicação, alinhe e gere migrações versionadas para PostgreSQL. `db push` não substitui um histórico de migrações para deploy.
+Em um banco novo, aplique o histórico versionado:
+
+```bash
+npx prisma migrate dev
+```
+
+Em desenvolvimento, crie novas migrações com:
+
+```bash
+npx prisma migrate dev --name nome_da_migracao
+```
+
+Em ambientes publicados, aplique as migrações já versionadas com:
+
+```bash
+npx prisma migrate deploy
+```
+
+Gere o Prisma Client após alterar o schema:
+
+```bash
+npx prisma generate
+```
+
+O banco local deste projeto já está baselinado. Se conectar outro banco que já contém as tabelas, compare primeiro o schema existente com `prisma/schema.prisma`; se forem iguais, registre a migração inicial uma única vez:
+
+```bash
+npx prisma migrate resolve --applied 20261027000000_init_postgresql
+```
+
+Depois disso, `npx prisma migrate deploy` passa a aplicar normalmente as próximas migrações.
 
 ## Segurança e operação
 
@@ -211,5 +294,5 @@ Para desenvolvimento, `prisma db push` sincroniza o schema sem depender desse hi
 - Troque as credenciais padrão do PostgreSQL antes de qualquer ambiente compartilhado.
 - Configure um provedor SMTP e um banco de dados gerenciados para produção.
 - `GET /users` exige autenticação e retorna apenas nome, status e data de criação, mas ainda lista todos os usuários ativos para qualquer usuário autenticado.
-- O projeto ainda não possui papéis administrativos; por isso, cada conta só pode alterar ou remover a si própria. Crie autorização por papéis antes de oferecer administração centralizada de usuários.
+- O projeto ainda não possui papéis administrativos: qualquer usuário autenticado pode consultar, atualizar e desativar outras contas. A própria conta não pode ser desativada pela rota `DELETE`. Restrinja essas operações por papel/permissão antes de publicar a API em um ambiente compartilhado.
 - Configure `ENABLE_SWAGGER=false` se a documentação não deve ficar exposta no ambiente publicado.
