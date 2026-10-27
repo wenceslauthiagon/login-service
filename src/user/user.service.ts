@@ -1,68 +1,112 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+} from '@nestjs/common';
 import { User, Prisma } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ConfigService } from '@nestjs/config';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { randomUUID } from 'crypto';
-import PaginetdHelper from './helpers/user-pagineted.helpers';
+import PaginatedResult from './helpers/paginated-result.helper';
+import { DocumentFactory } from './documents/document.factory';
+import { UserListItem } from './interfaces/user-list-item.interface';
+import { UserResponse } from './interfaces/user-response.interface';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly configService: ConfigService,
+  ) {}
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
-    const data: Prisma.UserCreateInput = {
-      ...createUserDto,
-      id: randomUUID(),
-      createdAt: new Date(),
-      active: true,
-      password: await bcrypt.hash(createUserDto.password, 10),
-    };
+  private sanitizeUserForResponse(user: User): UserResponse {
+    const {
+      password: _password,
+      reset_token: _resetToken,
+      reset_token_expires: _resetTokenExpires,
+      ...safeUser
+    } = user;
 
-    const createdUser = await this.prismaService.user.create({
-      data,
-    });
-
-    return {
-      ...createdUser,
-      password: undefined,
-    };
+    return safeUser;
   }
 
-  async findAllUsers(
-    page?: number,
-    limitPerpage?: number,
-  ): Promise<PaginetdHelper<User[]>> {
-    const numberEntries = await this.prismaService.user.count();
-    const paginetedHelper = new PaginetdHelper<User[]>(
+  async create(createUserDto: CreateUserDto): Promise<UserResponse> {
+    const docValidator = DocumentFactory.getValidator(createUserDto.document);
+    const normalizedDocument = docValidator.normalize(createUserDto.document);
+
+    if (!docValidator.validate(normalizedDocument)) {
+      throw new BadRequestException('Document is invalid');
+    }
+
+    const normalizedEmail = (createUserDto.email || '').trim().toLowerCase();
+
+    const exists = await this.prismaService.user.findFirst({
+      where: {
+        OR: [{ email: normalizedEmail }, { document: normalizedDocument }],
+      },
+    });
+
+    if (exists) {
+      throw new ConflictException('Email or document already in use');
+    }
+
+    const rounds =
+      Number(this.configService.get<number>('BCRYPT_SALT_ROUNDS')) || 10;
+    const salt = await bcrypt.genSalt(rounds);
+    const hashed = await bcrypt.hash(createUserDto.password, salt);
+
+    const data: Prisma.UserCreateInput = {
+      id: randomUUID(),
+      email: normalizedEmail,
+      document: normalizedDocument,
+      name: createUserDto.name,
+      active: true,
+      created_at: new Date(),
+      password: hashed,
+    };
+
+    const createdUser = await this.prismaService.user.create({ data });
+
+    return this.sanitizeUserForResponse(createdUser);
+  }
+
+  async findAll(
+    page = 1,
+    limitPerpage = 10,
+  ): Promise<PaginatedResult<UserListItem[]>> {
+    const numberEntries = await this.prismaService.user.count({
+      where: { active: true },
+    });
+    const paginatedResult = new PaginatedResult<UserListItem[]>(
       page,
       numberEntries,
       limitPerpage,
     );
 
-    Object.assign({
-      skip: paginetedHelper.offset,
-      take: paginetedHelper.limitPerpage,
-      order: {
-        id: 'ASC',
-      },
-    });
-
     const data = await this.prismaService.user.findMany({
       where: {
         active: true,
       },
+      select: {
+        id: true,
+        name: true,
+        active: true,
+        created_at: true,
+      },
+      skip: paginatedResult.offset,
+      take: paginatedResult.limitPerpage,
+      orderBy: {
+        id: 'asc',
+      },
     });
 
-    for (const users of data) {
-      users.password = undefined;
+    paginatedResult.data = data;
 
-      paginetedHelper.data = data;
-      delete paginetedHelper.offset;
-    }
-
-    return paginetedHelper;
+    return paginatedResult;
   }
 
   async findByEmail(email: string) {
@@ -73,56 +117,54 @@ export class UserService {
     return user;
   }
 
-  async update(email: string, updateUserDto: UpdateUserDto): Promise<User> {
+  async update(
+    id: string,
+    updateUserDto: UpdateUserDto,
+  ): Promise<UserResponse> {
     const userExist = await this.prismaService.user.findUnique({
-      where: { email },
+      where: { id },
     });
 
     if (!userExist) {
-      throw new Error('User does not exist...');
+      throw new NotFoundException('User does not exist');
     }
 
     const data: Prisma.UserUpdateInput = {
-      ...updateUserDto,
-      updatedAt: new Date(),
+      name: updateUserDto.name,
+      updated_at: new Date(),
     };
 
     const updatedUser = await this.prismaService.user.update({
       data,
       where: {
-        email,
+        id,
       },
     });
 
-    updatedUser.password = undefined;
-
-    return updatedUser;
+    return this.sanitizeUserForResponse(updatedUser);
   }
 
-  async destroy(email: string): Promise<User> {
+  async remove(id: string): Promise<UserResponse> {
     const userExist = await this.prismaService.user.findUnique({
-      where: { email },
+      where: { id },
     });
 
     if (!userExist) {
-      throw new Error('User does not exist...');
+      throw new NotFoundException('User does not exist');
     }
 
     const data: Prisma.UserUpdateInput = {
-      ...userExist,
-      deletedAt: new Date(),
+      deleted_at: new Date(),
       active: false,
     };
 
     const deletedUser = await this.prismaService.user.update({
       data,
       where: {
-        email,
+        id,
       },
     });
 
-    deletedUser.password = undefined;
-
-    return deletedUser;
+    return this.sanitizeUserForResponse(deletedUser);
   }
 }

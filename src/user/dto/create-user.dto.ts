@@ -1,41 +1,35 @@
-import { User } from '../entities/user.entity';
 import {
-  IsDateString,
   IsEmail,
-  IsOptional,
   IsString,
   Matches,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
-export class CreateUserDto extends User {
+export class CreateUserDto {
+  @ApiProperty({ example: 'Full Name' })
+  @IsString()
+  name: string;
+
+  @ApiProperty({ example: 'user@example.com' })
   @IsEmail()
   email: string;
 
+  @ApiProperty({
+    example: '12345678901',
+    description: 'CPF (11 digits) or RG (9 digits)',
+  })
+  @Matches(/^(\d{9}|\d{11})$/, { message: 'document must be 9 or 11 digits' })
+  document: string;
+
+  @ApiProperty({ example: 'AstrongPass1', minLength: 8, maxLength: 20 })
   @IsString()
-  @MinLength(6)
+  @MinLength(8)
   @MaxLength(20)
   @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
     message: 'password too weak',
   })
   password: string;
 
-  @IsString()
-  name: string;
-
-  @IsOptional()
-  active: boolean;
-
-  @IsDateString()
-  @IsOptional()
-  createdAt: Date;
-
-  @IsDateString()
-  @IsOptional()
-  updatedAt: Date;
-
-  @IsDateString()
-  @IsOptional()
-  deletedAt: Date;
 }

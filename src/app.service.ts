@@ -6,7 +6,4 @@ export class AppService {
     return 'Login Service';
   }
 
-  getMe(): string {
-    return 'Info extrated from JWT';
-  }
 }

@@ -1,4 +1,4 @@
-export default class PaginetdHelper<T> {
+export default class PaginatedResult<T> {
   public totalPages: number;
   public page: number;
   public limitPerpage: number;
@@ -6,9 +6,9 @@ export default class PaginetdHelper<T> {
   public offset: number;
   public data: T;
 
-  constructor(page: number, totalCount: number, limitPerpage: number) {
-    this.limitPerpage = limitPerpage;
-    this.page = this.adjustFetchedPage(page, totalCount);
+  constructor(page = 1, totalCount = 0, limitPerpage = 10) {
+    this.limitPerpage = Math.min(Math.max(Number(limitPerpage) || 10, 1), 100);
+    this.page = this.adjustFetchedPage(Number(page) || 1, totalCount);
     this.offset = this.page * this.limitPerpage - this.limitPerpage;
     this.numberEntries = totalCount;
   }

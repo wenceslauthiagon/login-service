@@ -4,11 +4,8 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-
 import { AuthGuard } from '@nestjs/passport';
-// Decorators
 import { IS_PUBLIC_KEY } from '../decorators/is-public.decorator';
-// Error Handling
 import { UnauthorizedError } from '../errors/unauthorized.error';
 
 @Injectable()

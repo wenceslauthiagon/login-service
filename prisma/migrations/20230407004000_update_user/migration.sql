@@ -5,9 +5,12 @@ CREATE TABLE "User" (
     "password" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "active" BOOLEAN NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "deletedAt" DATETIME,
-    "updatedAt" DATETIME
+    "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "document" TEXT,
+    "deleted_at" DATETIME,
+    "updated_at" DATETIME,
+    "reset_token" TEXT,
+    "reset_token_expires" DATETIME
 );
 
 -- CreateIndex
@@ -18,3 +21,6 @@ CREATE INDEX "User_email_idx" ON "User"("email");
 
 -- CreateIndex
 CREATE INDEX "User_name_idx" ON "User"("name");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_document_key" ON "User"("document");

@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+
+  login_service:
+    build: .
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=${NODE_ENV}
+      - APP_PORT=${APP_PORT}
+      - HOST=${HOST}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?schema=public
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - EMAIL_SECURE=${EMAIL_SECURE}
+      - EMAIL_SERVICE=${EMAIL_SERVICE}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRES_IN=${JWT_EXPIRES_IN}
+      - BCRYPT_SALT_ROUNDS=${BCRYPT_SALT_ROUNDS}
+      - RESET_TOKEN_EXPIRATION_MINUTES=${RESET_TOKEN_EXPIRATION_MINUTES}
+      - FRONTEND_URL=${FRONTEND_URL}
+      - ENABLE_SWAGGER=${ENABLE_SWAGGER}
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  maildev:
+    image: maildev/maildev:latest
+    restart: unless-stopped
+    ports:
+      - "1080:1080" # web UI
+      - "1025:1025" # SMTP
+    environment:
+      - MAILDEV_INCOMING_USER=${MAILDEV_INCOMING_USER}
+      - MAILDEV_INCOMING_PASS=${MAILDEV_INCOMING_PASS}
+
+volumes:
+  postgres_data:

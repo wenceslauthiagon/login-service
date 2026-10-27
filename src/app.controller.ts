@@ -1,22 +1,24 @@
 import { Controller, Get } from '@nestjs/common';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { AppService } from './app.service';
-import { CurrentUser } from './auth/decorators/current-user.decorator';
 import { IsPublic } from './auth/decorators/is-public.decorator';
-import { User } from './user/entities/user.entity';
 
+@ApiTags('Health Check')
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   @IsPublic()
   @Get('/check')
+  @ApiOperation({ summary: 'Verificação de disponibilidade da API' })
   getHello(): string {
     return this.appService.getCheck();
   }
 
   @IsPublic()
-  @Get('/me')
-  getMe(@CurrentUser() user: User) {
-    return user;
+  @Get('/health')
+  @ApiOperation({ summary: 'Health check da API' })
+  getHealth(): { status: string } {
+    return { status: 'ok' };
   }
 }

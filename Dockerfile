@@ -1,4 +1,5 @@
-FROM node:22.8.0 AS builder
+FROM node:22.22.3-alpine AS builder
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package*.json ./
@@ -11,13 +12,15 @@ COPY \
     tsconfig.build.json \
     tsconfig.json \
     ./
+COPY prisma ./prisma
+RUN npx prisma generate
 RUN npm run build
 
-RUN npm prune --omit=dev \
-    && npm cache clean --force
+RUN npm cache clean --force
 
 
-FROM node:22.8.0-alpine
+FROM node:22.22.3-alpine
+RUN apk add --no-cache openssl
 RUN addgroup -S appgroup && adduser -H -D -S appuser -G appgroup
 USER appuser
 WORKDIR /app
